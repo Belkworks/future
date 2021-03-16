@@ -18,7 +18,7 @@ class Future
 			f.fn Value if f.state == State
 
 	transition: (State, Value) =>
-		return unless @State == STATE.PENDING
+		return if @State ~= STATE.PENDING
 		@State = State
 
 		@Value = Value
@@ -35,7 +35,7 @@ class Future
 		@onState STATE.REJECTED, reject
 		@onState STATE.RESOLVED, resolve
 
-		return unless @State == STATE.NEW
+		return if @State ~= STATE.NEW
 		@State = STATE.PENDING
 
 		tReject = (value) -> @transition STATE.REJECTED, value
@@ -44,7 +44,7 @@ class Future
 		S, E = pcall @Operation, tReject, tResolve
 		if S -- return cancellation
 			(...) ->
-				return unless @State == STATE.PENDING
+				return if @State ~= STATE.PENDING
 				@transition STATE.CANCELED
 				E ...
 		else

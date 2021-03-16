@@ -19,7 +19,7 @@ do
       end
     end,
     transition = function(self, State, Value)
-      if not (self.State == STATE.PENDING) then
+      if self.State ~= STATE.PENDING then
         return 
       end
       self.State = State
@@ -40,7 +40,7 @@ do
     execute = function(self, reject, resolve)
       self:onState(STATE.REJECTED, reject)
       self:onState(STATE.RESOLVED, resolve)
-      if not (self.State == STATE.NEW) then
+      if self.State ~= STATE.NEW then
         return 
       end
       self.State = STATE.PENDING
@@ -55,7 +55,7 @@ do
       local S, E = pcall(self.Operation, tReject, tResolve)
       if S then
         return function(...)
-          if not (self.State == STATE.PENDING) then
+          if self.State ~= STATE.PENDING then
             return 
           end
           self:transition(STATE.CANCELED)
