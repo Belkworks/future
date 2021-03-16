@@ -6,6 +6,8 @@ local STATE = {
   ERROR = 3,
   CANCELED = 4
 }
+local noop
+noop = function() end
 local Future
 do
   local _class_0
@@ -105,13 +107,13 @@ F = {
   resolve = function(value)
     return Future(function(reject, resolve)
       resolve(value)
-      return function() end
+      return noop
     end)
   end,
   reject = function(value)
     return Future(function(reject, resolve)
       reject(value)
-      return function() end
+      return noop
     end)
   end,
   attempt = function(fn)
@@ -122,7 +124,7 @@ F = {
       else
         reject(E)
       end
-      return function() end
+      return noop
     end)
   end,
   both = function(a, b)
@@ -131,8 +133,7 @@ F = {
       nowB = function()
         return F.fork(reject, resolve, b)
       end
-      F.fork(reject, nowB, a)
-      return function() end
+      return F.fork(reject, nowB, a)
     end)
   end,
   alt = function(a, b)
@@ -141,8 +142,7 @@ F = {
       tryB = function()
         return F.fork(reject, resolve, b)
       end
-      F.fork(tryB, resolve, a)
-      return function() end
+      return F.fork(tryB, resolve, a)
     end)
   end,
   lastly = function(a, b)
@@ -159,8 +159,7 @@ F = {
           return resolve(V)
         end), b)
       end
-      F.fork(tryB, nowB, a)
-      return function() end
+      return F.fork(tryB, nowB, a)
     end)
   end,
   map = function(f, future)
@@ -169,8 +168,7 @@ F = {
       transform = function(v)
         return resolve(f(v))
       end
-      F.fork(reject, transform, future)
-      return function() end
+      return F.fork(reject, transform, future)
     end)
   end,
   mapRej = function(f, future)
@@ -179,8 +177,7 @@ F = {
       transform = function(v)
         return reject(f(v))
       end
-      F.fork(transform, resolve, future)
-      return function() end
+      return F.fork(transform, resolve, future)
     end)
   end,
   bimap = function(r, a, future)
@@ -193,8 +190,7 @@ F = {
       transformRej = function(v)
         return reject(r(v))
       end
-      F.fork(transformRej, transform, future)
-      return function() end
+      return F.fork(transformRej, transform, future)
     end)
   end,
   swap = function(f)
