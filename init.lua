@@ -68,6 +68,7 @@ do
   _class_0 = setmetatable({
     __init = function(self, Operation)
       self.Operation = Operation
+      assert('function' == type(self.Operation), 'Future: Arg1 should be a function!')
       self.State = STATE.NEW
       self.Futures = { }
     end,
@@ -199,4 +200,9 @@ F = {
     end)
   end
 }
+setmetatable(F, {
+  __call = function(self, ...)
+    return Future(...)
+  end
+})
 return F
