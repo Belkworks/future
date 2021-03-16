@@ -93,11 +93,18 @@ end
 local F = { }
 F = {
   Future = Future,
-  fork = function(reject, resolve, future)
+  fork = function(future, reject, resolve)
     return future:execute(reject, resolve)
   end,
-  value = function(resolve, future)
-    return F.fork(error, resolve, future)
+  value = function(future, resolve)
+    return F.fork(future, error, resolve)
+  end,
+  done = function(future, fn)
+    return F.fork(future, (function(V)
+      return fn(V)
+    end), (function(V)
+      return fn(nil, V)
+    end))
   end,
   log = function(T)
     return function(...)
@@ -131,35 +138,35 @@ F = {
     return Future(function(reject, resolve)
       local nowB
       nowB = function()
-        return F.fork(reject, resolve, b)
+        return F.fork(b, reject, resolve)
       end
-      return F.fork(reject, nowB, a)
+      return F.fork(a, reject, nowB)
     end)
   end,
   alt = function(a, b)
     return Future(function(reject, resolve)
       local tryB
       tryB = function()
-        return F.fork(reject, resolve, b)
+        return F.fork(b, reject, resolve)
       end
-      return F.fork(tryB, resolve, a)
+      return F.fork(a, tryB, resolve)
     end)
   end,
   lastly = function(a, b)
     return Future(function(reject, resolve)
       local tryB
       tryB = function(V)
-        return F.fork(reject, (function()
+        return F.fork(b, reject, (function()
           return reject(V)
-        end), b)
+        end))
       end
       local nowB
       nowB = function(V)
-        return F.fork(reject, (function()
+        return F.fork(b, reject, (function()
           return resolve(V)
-        end), b)
+        end))
       end
-      return F.fork(tryB, nowB, a)
+      return F.fork(a, tryB, nowB)
     end)
   end,
   map = function(f, future)
@@ -168,7 +175,7 @@ F = {
       transform = function(v)
         return resolve(f(v))
       end
-      return F.fork(reject, transform, future)
+      return F.fork(future, reject, transform)
     end)
   end,
   mapRej = function(f, future)
@@ -177,7 +184,7 @@ F = {
       transform = function(v)
         return reject(f(v))
       end
-      return F.fork(transform, resolve, future)
+      return F.fork(future, transform, resolve)
     end)
   end,
   bimap = function(r, a, future)
@@ -190,13 +197,46 @@ F = {
       transformRej = function(v)
         return reject(r(v))
       end
-      return F.fork(transformRej, transform, future)
+      return F.fork(future, transformRej, transform)
     end)
   end,
-  swap = function(f)
+  swap = function(future)
     return Future(function(reject, resolve)
-      return F.fork(resolve, reject, f)
+      return F.fork(future, resolve, reject)
     end)
+  end,
+  race = function(a, b)
+    return Future(function(reject, resolve)
+      local cA, cB = noop, noop
+      local clean
+      clean = function()
+        return cA(), cB()
+      end
+      local lose
+      lose = function(v)
+        reject(v)
+        return clean()
+      end
+      local win
+      win = function(v)
+        resolve(v)
+        return clean()
+      end
+      cA = F.fork(a, lose, win)
+      cB = F.fork(b, lose, win)
+      return clean
+    end)
+  end,
+  never = function()
+    local f = Future(noop)
+    f.never = true
+    return f
+  end,
+  isNever = function(future)
+    return future.never == true
+  end,
+  isFuture = function(future)
+    return future.__class == Future
   end
 }
 setmetatable(F, {

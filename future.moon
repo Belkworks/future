@@ -57,8 +57,9 @@ class Future
 F = {}
 F =
 	:Future
-	fork: (reject, resolve, future) -> future\execute reject, resolve
-	value: (resolve, future) -> F.fork error, resolve, future
+	fork: (future, reject, resolve) -> future\execute reject, resolve
+	value: (future, resolve) -> F.fork future, error, resolve
+	done: (future, fn) -> F.fork future, ((V)->fn V), ((V)->fn nil, V)
 
 	log: (T) -> (...) -> print '['..T..']: ', ...
 
@@ -83,38 +84,65 @@ F =
 
 	both: (a, b) -> -- b or !a or !b
 		Future (reject, resolve) ->
-			nowB = -> F.fork reject, resolve, b
-			F.fork reject, nowB, a
+			nowB = -> F.fork b, reject, resolve
+			F.fork a, reject, nowB
 
 	alt: (a, b) -> -- a or b or !b
 		Future (reject, resolve) ->
-			tryB = -> F.fork reject, resolve, b
-			F.fork tryB, resolve, a
+			tryB = -> F.fork b, reject, resolve
+			F.fork a, tryB, resolve
 
 	lastly: (a, b) ->
 		Future (reject, resolve) ->
-			tryB = (V) -> F.fork reject, (-> reject V), b
-			nowB = (V) -> F.fork reject, (-> resolve V), b
-			F.fork tryB, nowB, a
+			tryB = (V) -> F.fork b, reject, (-> reject V)
+			nowB = (V) -> F.fork b, reject, (-> resolve V)
+			F.fork a, tryB, nowB
 
-	map: (f, future) -> -- apply f to resovle
+	map: (f, future) -> -- apply f to resolve
 		Future (reject, resolve) ->
 			transform = (v) -> resolve f v
-			F.fork reject, transform, future
+			F.fork future, reject, transform
 
 	mapRej: (f, future) -> -- apply f to rejection
 		Future (reject, resolve) ->
 			transform = (v) -> reject f v
-			F.fork transform, resolve, future
+			F.fork future, transform, resolve
 
 	bimap: (r, a, future) -> -- apply r to rejection, a to resolve
 		Future (reject, resolve) ->
 			transform = (v) -> resolve a v
 			transformRej = (v) -> reject r v
-			F.fork transformRej, transform, future
+			F.fork future, transformRej, transform
 
-	swap: (f) -> -- swap branches
-		Future (reject, resolve) -> F.fork resolve, reject, f
+	swap: (future) -> -- swap branches
+		Future (reject, resolve) -> F.fork future, resolve, reject
+
+	race: (a, b) ->
+		Future (reject, resolve) ->
+			cA, cB = noop, noop
+
+			clean = -> cA!, cB!
+
+			lose = (v) ->
+				reject v
+				clean!
+
+			win = (v) ->
+				resolve v
+				clean!
+
+			cA = F.fork a, lose, win
+			cB = F.fork b, lose, win
+
+			clean
+
+	never: ->
+		f = Future noop
+		f.never = true
+		f
+
+	isNever: (future) -> future.never == true
+	isFuture: (future) -> future.__class == Future -- TODO: support subclass?
 
 setmetatable F, __call: (...) => Future ...
 
