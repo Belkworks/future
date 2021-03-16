@@ -111,6 +111,17 @@ F = {
       return print('[' .. T .. ']: ', ...)
     end
   end,
+  node = function(fn)
+    return Future(function(reject, resolve)
+      fn(function(e, v)
+        if e ~= nil then
+          return reject(e)
+        end
+        return resolve(v)
+      end)
+      return noop
+    end)
+  end,
   resolve = function(value)
     return Future(function(reject, resolve)
       resolve(value)

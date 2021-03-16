@@ -63,6 +63,14 @@ F =
 
 	log: (T) -> (...) -> print '['..T..']: ', ...
 
+	node: (fn) ->
+		Future (reject, resolve) ->
+			fn (e, v) ->
+				return reject e if e ~= nil
+				resolve v
+
+			noop
+
 	resolve: (value) ->
 		Future (reject, resolve) ->
 			resolve value
