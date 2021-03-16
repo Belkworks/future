@@ -55,6 +55,9 @@ do
       local S, E = pcall(self.Operation, tReject, tResolve)
       if S then
         return function(...)
+          if not (self.State == STATE.PENDING) then
+            return 
+          end
           self:transition(STATE.CANCELED)
           return E(...)
         end

@@ -44,6 +44,7 @@ class Future
 		S, E = pcall @Operation, tReject, tResolve
 		if S -- return cancellation
 			(...) ->
+				return unless @State == STATE.PENDING
 				@transition STATE.CANCELED
 				E ...
 		else
