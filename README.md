@@ -55,7 +55,7 @@ end)
 
 If a Future is sure to succeed, You can use the `value` function.  
 This function will throw if the Future is rejected.  
-`fork(future, resolve) -> Cancel`
+`value(future, resolve) -> Cancel`
 ```lua
 value = Future.value
 cancel = value(F, function(v)
