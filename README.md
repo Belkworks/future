@@ -62,3 +62,16 @@ cancel = value(F, function(v)
     print('resolved with:', v)
 end)
 ```
+
+You can run a Future using the node style with the `done` function.  
+`done(future, fn) -> Cancel`
+```lua
+done = Future.done
+cancel = done(F, function(e, v)
+    if e == nil then
+        print('resolved with:', v)
+    else
+        print('rejected with:', e)
+    end
+end)
+```
