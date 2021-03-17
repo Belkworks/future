@@ -91,3 +91,19 @@ cancel = done(F, function(e, v)
     end
 end)
 ```
+
+### Utilities
+
+Every Future has a `pipe` method to allow fluent chaining of futures.  
+The receiving function, in this case `map`, should take a Future as its first argument.  
+`Future:pipe(fn, ...) -> Future`
+```lua
+resolve = Future.resolve
+map = Future.map
+value = Future.value
+
+num = resolve(42)
+doubled = num:pipe(map, function(v) return v*2 end)
+
+value(doubled, print) -- prints 84
+```
