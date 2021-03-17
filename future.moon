@@ -9,6 +9,7 @@ STATE =
 noop = ->
 
 class Future
+	@isFuture: (F) -> F.__class == @ -- TODO: support subclass?
 	new: (@Operation) =>
 		assert 'function' == type(@Operation), 'Future: Arg1 should be a function!'
 		@State = STATE.NEW
@@ -53,6 +54,11 @@ class Future
 		else
 			@transition STATE.ERROR, E
 			error E
+
+	pipe: (fn, ...) =>
+		F = fn @, ...
+		assert @@isFuture(F), 'pipe: must return a future!'
+		F
 
 F = {}
 F =
@@ -151,7 +157,7 @@ F =
 		f
 
 	isNever: (future) -> future.never == true
-	isFuture: (future) -> future.__class == Future -- TODO: support subclass?
+	isFuture: (future) -> Future.isFuture future
 
 setmetatable F, __call: (...) => Future ...
 

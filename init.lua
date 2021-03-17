@@ -67,6 +67,11 @@ do
         self:transition(STATE.ERROR, E)
         return error(E)
       end
+    end,
+    pipe = function(self, fn, ...)
+      local F = fn(self, ...)
+      assert(self.__class:isFuture(F), 'pipe: must return a future!')
+      return F
     end
   }
   _base_0.__index = _base_0
@@ -88,6 +93,10 @@ do
     end
   })
   _base_0.__class = _class_0
+  local self = _class_0
+  self.isFuture = function(F)
+    return F.__class == self
+  end
   Future = _class_0
 end
 local F = { }
@@ -248,7 +257,7 @@ F = {
     return future.never == true
   end,
   isFuture = function(future)
-    return future.__class == Future
+    return Future.isFuture(future)
   end
 }
 setmetatable(F, {
