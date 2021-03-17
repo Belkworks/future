@@ -66,8 +66,9 @@ F =
 	node: (fn) ->
 		Future (reject, resolve) ->
 			fn (e, v) ->
-				return reject e if e ~= nil
-				resolve v
+				if e == nil
+					resolve v
+				else reject e
 
 			noop
 

@@ -114,10 +114,11 @@ F = {
   node = function(fn)
     return Future(function(reject, resolve)
       fn(function(e, v)
-        if e ~= nil then
+        if e == nil then
+          return resolve(v)
+        else
           return reject(e)
         end
-        return resolve(v)
       end)
       return noop
     end)
