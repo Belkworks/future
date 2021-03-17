@@ -106,17 +106,17 @@ F =
 			nowB = (V) -> F.fork b, reject, (-> resolve V)
 			F.fork a, tryB, nowB
 
-	map: (f, future) -> -- apply f to resolve
+	map: (future, f) -> -- apply f to resolve
 		Future (reject, resolve) ->
 			transform = (v) -> resolve f v
 			F.fork future, reject, transform
 
-	mapRej: (f, future) -> -- apply f to rejection
+	mapRej: (future, f) -> -- apply f to rejection
 		Future (reject, resolve) ->
 			transform = (v) -> reject f v
 			F.fork future, transform, resolve
 
-	bimap: (r, a, future) -> -- apply r to rejection, a to resolve
+	bimap: (future, r, a) -> -- apply r to rejection, a to resolve
 		Future (reject, resolve) ->
 			transform = (v) -> resolve a v
 			transformRej = (v) -> reject r v

@@ -180,7 +180,7 @@ F = {
       return F.fork(a, tryB, nowB)
     end)
   end,
-  map = function(f, future)
+  map = function(future, f)
     return Future(function(reject, resolve)
       local transform
       transform = function(v)
@@ -189,7 +189,7 @@ F = {
       return F.fork(future, reject, transform)
     end)
   end,
-  mapRej = function(f, future)
+  mapRej = function(future, f)
     return Future(function(reject, resolve)
       local transform
       transform = function(v)
@@ -198,7 +198,7 @@ F = {
       return F.fork(future, transform, resolve)
     end)
   end,
-  bimap = function(r, a, future)
+  bimap = function(future, r, a)
     return Future(function(reject, resolve)
       local transform
       transform = function(v)
