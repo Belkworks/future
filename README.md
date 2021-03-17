@@ -40,7 +40,20 @@ F = node(function(done)
 end)
 ```
 
+You can make a Future that instantly resolves using the `resolve` function.
+```lua
+resolve = Future.resolve
+F = resolve(42)
+```
+
+Similarly, you can use the `reject` function to make a Future that instantly rejects.
+```lua
+reject = Future.reject
+F = reject(-4)
+```
+
 ### Consuming Futures
+*In the following examples, `F` is a Future*.  
 To run a Future, use the `fork` function.  
 `fork(future, reject, resolve) -> Cancel`
 ```lua
@@ -64,6 +77,9 @@ end)
 ```
 
 You can run a Future using the node style with the `done` function.  
+The callback will receive two parameters - `e` and `v`.  
+If `e` is *nil*, the Future resolved with the value `v`.  
+Otherwise it rejected with the value `e`.  
 `done(future, fn) -> Cancel`
 ```lua
 done = Future.done
