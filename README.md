@@ -41,7 +41,7 @@ end)
 ```
 
 ### Consuming Futures
-To run a future, use the `fork` function.  
+To run a Future, use the `fork` function.  
 `fork(future, reject, resolve) -> Cancel`
 ```lua
 fork = Future.fork
