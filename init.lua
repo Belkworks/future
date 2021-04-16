@@ -56,6 +56,7 @@ do
       end
       local S, E = pcall(self.Operation, tReject, tResolve)
       if S then
+        assert('function' == type(S), 'future must return a cancellation function!')
         return function(...)
           if self.State ~= STATE.PENDING then
             return 

@@ -49,7 +49,7 @@ class Future
 
         S, E = pcall @Operation, tReject, tResolve
         if S -- return cancellation
-            -- TODO: Assert E is a function?
+            assert 'function' == type(S), 'future must return a cancellation function!'
             (...) ->
                 return if @State ~= STATE.PENDING
                 @transition STATE.CANCELED
