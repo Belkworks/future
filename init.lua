@@ -8,6 +8,10 @@ local STATE = {
 }
 local noop
 noop = function() end
+local retnoop
+retnoop = function()
+  return noop
+end
 local Future
 do
   local _class_0
@@ -250,9 +254,11 @@ F = {
     end)
   end,
   never = function()
-    local f = Future(noop)
-    f.never = true
-    return f
+    do
+      local _with_0 = Future(retnoop)
+      _with_0.never = true
+      return _with_0
+    end
   end,
   isNever = function(future)
     return future.never == true

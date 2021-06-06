@@ -10,6 +10,7 @@ STATE =
     CANCELED: 4
 
 noop = ->
+retnoop = -> noop
 
 class Future
     @isFuture: (F) -> F.__class == @ -- TODO: support subclass?
@@ -155,9 +156,8 @@ F =
             clean
 
     never: ->
-        f = Future noop
-        f.never = true
-        f
+        with Future retnoop
+            .never = true
 
     isNever: (future) -> future.never == true
     isFuture: (future) -> Future.isFuture future
