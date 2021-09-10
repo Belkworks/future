@@ -38,12 +38,6 @@ class Future
         @State = State
         @Value = Value
 
-        -- debug
-        -- for i, v in pairs @@STATE
-            -- if State == v
-            --  print i .. ' with ' .. tostring Value
-            --  break
-
         for C in *@Listeners
             Future.ASYNC C, @State, @Value
 
