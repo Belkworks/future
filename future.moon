@@ -17,6 +17,9 @@ cancel = (...) ->
     Args = { ... }
     -> F\cancel! for F in *Args
 
+indexOf = (t, x) ->
+    return k for k, v in pairs t when v == x
+
 class Future
     @ASYNC: (fn, ...) -> wrap(fn) ...
     @STATE:
@@ -140,3 +143,6 @@ class Future
             clean
 
     @log: (header) -> (value) -> print "[#{header}]:", value
+    @watch: (F, Callback = print) ->
+        return if F\isDead!
+        F\hook (State, Value) -> Callback (indexOf Future.STATE, k)
