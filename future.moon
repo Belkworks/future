@@ -1,167 +1,106 @@
 -- future.moon
 -- SFZILabs 2021
 
-STATE =
-    NEW: -1
-    PENDING: 0
-    REJECTED: 1
-    RESOLVED: 2
-    ERROR: 3
-    CANCELED: 4
-
 noop = ->
-retnoop = -> noop
 
 class Future
-    @isFuture: (F) -> F.__class == @ -- TODO: support subclass?
-    new: (@Operation) =>
-        assert 'function' == type(@Operation), 'Future: Arg1 should be a function!'
-        @State = STATE.NEW
-        @Futures = {}
+    @ASYNC: (fn, ...) -> coroutine.wrap(fn) ...
+    @STATE:
+        IDLE: -2
+        RUNNING: -1
+        RESOLVED: 0
+        REJECTED: 1
+        CANCEL: 2
 
-    drain: (Value, State) =>
-        while #@Futures > 0
-            f = table.remove @Futures
-            f.fn Value if f.state == State
+    new: (@Callback) =>
+        @State = @@STATE.IDLE
+        @Listeners = {}
 
     transition: (State, Value) =>
-        return if @State ~= STATE.PENDING
+        return unless @State == @@STATE.RUNNING
         @State = State
-
         @Value = Value
-        @drain Value, State
-    
-    onState: (state, fn) =>
-        switch @State
-            when STATE.PENDING, STATE.NEW
-                table.insert @Futures, :state, :fn
-            when state
-                fn @Value
 
-    execute: (reject, resolve) =>
-        @onState STATE.REJECTED, reject
-        @onState STATE.RESOLVED, resolve
+        -- debug
+        -- for i, v in pairs @@STATE
+            -- if State == v
+            --  print i .. ' with ' .. tostring Value
+            --  break
 
-        return if @State ~= STATE.NEW
-        @State = STATE.PENDING
+        for C in *@Listeners
+            Future.ASYNC C, @State, @Value
 
-        tReject = (value) -> @transition STATE.REJECTED, value
-        tResolve = (value) -> @transition STATE.RESOLVED, value
+        @Listeners = nil
 
-        S, E = pcall @Operation, tReject, tResolve
-        if S -- return cancellation
-            assert 'function' == type(E), 'future must return a cancellation function!'
-            (...) ->
-                return if @State ~= STATE.PENDING
-                @transition STATE.CANCELED
-                E ...
-        else
-            @transition STATE.ERROR, E
-            error E
+    transitioner: (State) =>
+        (Value) -> @transition State, Value
 
-    pipe: (fn, ...) =>
-        F = fn @, ...
-        assert @@isFuture(F), 'pipe: must return a future!'
-        F
+    resolver: (State) =>
+        @transitioner @@STATE.RESOLVED
 
-F = {}
-F =
-    :Future
-    fork: (future, reject, resolve) -> future\execute reject, resolve
-    value: (future, resolve) -> F.fork future, error, resolve
-    done: (future, fn) -> F.fork future, ((V)->fn V), ((V)->fn nil, V)
+    hook: (Callback) =>
+        if @State > @@STATE.RUNNING
+            Callback @State, @Value
+        else table.insert @Listeners, Callback
 
-    log: (T) -> (...) -> print '['..T..']: ', ...
+    hookState: (Target, Callback) =>
+        @hook (State, Value) ->
+            return unless State == Target
+            Callback Value
 
-    node: (fn) ->
-        Future (reject, resolve) ->
-            fn (e, v) ->
-                if e == nil
-                    resolve v
-                else reject e
+    fork: (Resolved, Rejected) =>
+        @hookState @@STATE.RESOLVED, Resolved or ->
+        @hookState @@STATE.REJECTED, Rejected or ->
 
-            noop
+        return unless @State == @@STATE.IDLE
+        @State = @@STATE.RUNNING
 
-    resolve: (value) ->
-        Future (reject, resolve) ->
-            resolve value
-            noop
-
-    reject: (value) ->
-        Future (reject, resolve) ->
-            reject value
-            noop
-
-    attempt: (fn) ->
-        Future (reject, resolve) ->
-            S, E = pcall fn
+        Resolve = @transitioner @@STATE.RESOLVED
+        Reject = @transitioner @@STATE.REJECTED
+        Cancel = @transitioner @@STATE.CANCEL
+        
+        Future.ASYNC ->
+            S, E = pcall @Callback, Resolve, Reject
             if S
-                resolve E
-            else reject E
-            
-            noop
+                if (type E) == 'function'
+                    @hookState @@STATE.CANCEL, E
+            else Reject E
 
-    both: (a, b) -> -- b or !a or !b
-        Future (reject, resolve) ->
-            nowB = -> F.fork b, reject, resolve
-            F.fork a, reject, nowB
+        Cancel
 
-    alt: (a, b) -> -- a or b or !b
-        Future (reject, resolve) ->
-            tryB = -> F.fork b, reject, resolve
-            F.fork a, tryB, resolve
+    -- TODO: make static
+    value: (Callback) =>
+        @fork Callback, error
 
-    lastly: (a, b) ->
-        Future (reject, resolve) ->
-            tryB = (V) -> F.fork b, reject, (-> reject V)
-            nowB = (V) -> F.fork b, reject, (-> resolve V)
-            F.fork a, tryB, nowB
+    -- TODO: make static
+    done: (Callback) =>
+        Resolved = (Value) -> Callback nil, Value
+        @fork Resolved, Callback
 
-    map: (future, f) -> -- apply f to resolve
-        Future (reject, resolve) ->
-            transform = (v) -> resolve f v
-            F.fork future, reject, transform
+    -- TODO: node
+    -- TODO: swap
+    -- TODO: lastly
 
-    mapRej: (future, f) -> -- apply f to rejection
-        Future (reject, resolve) ->
-            transform = (v) -> reject f v
-            F.fork future, transform, resolve
+    @resolve: (value) -> Future (resolve) -> resolve value
+    @reject: (value) -> Future (reject) => reject value
+    @never: ->
+        with Future noop
+            .Never = true
+    -- TODO: isNever
 
-    bimap: (future, r, a) -> -- apply r to rejection, a to resolve
-        Future (reject, resolve) ->
-            transform = (v) -> resolve a v
-            transformRej = (v) -> reject r v
-            F.fork future, transformRej, transform
+    -- TODO: cancel the loser
+    @race: (A, B) ->
+        Future (resolve, reject) ->
+            A\fork resolve, reject
+            B\fork resolve, reject
 
-    swap: (future) -> -- swap branches
-        Future (reject, resolve) -> F.fork future, resolve, reject
+    @alt: (A, B) ->
+        Future (resolve, reject) ->
+            A\fork resolve, ->
+                B\fork resolve, reject
 
-    race: (a, b) ->
-        Future (reject, resolve) ->
-            cA, cB = noop, noop
+    @both: (A, B) ->
+        Future (resolve, reject) ->
+            A\fork (-> B\fork resolve, reject), reject
 
-            clean = -> cA!, cB!
-
-            lose = (v) ->
-                reject v
-                clean!
-
-            win = (v) ->
-                resolve v
-                clean!
-
-            cA = F.fork a, lose, win
-            cB = F.fork b, lose, win
-
-            clean
-
-    never: ->
-        with Future retnoop
-            .never = true
-
-    isNever: (future) -> future.never == true
-    isFuture: (future) -> Future.isFuture future
-
-setmetatable F, __call: (...) => Future ...
-
-F
+    @log: (header) -> (value) -> print "[#{header}]:", value

@@ -2,6 +2,8 @@
 # Future
 *An alternative to Promises, inspired by [Fluture](https://github.com/fluture-js/Fluture)*
 
+***THIS DOCUMENT IS OUTDATED***
+
 **Importing with [Neon](https://github.com/Belkworks/NEON)**:
 ```lua
 Future = NEON:github('belkworks', 'future')
