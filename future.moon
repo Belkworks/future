@@ -1,7 +1,16 @@
 -- future.moon
 -- SFZILabs 2021
 
+import insert from table
+
 noop = ->
+
+after = (fn, ...) ->
+    unpack [((v) -> c v, fn v) for c in *{...}]
+
+cancel = (...) ->
+    Args = { ... }
+    -> F\cancel! for F in *Args
 
 class Future
     @ASYNC: (fn, ...) -> coroutine.wrap(fn) ...
@@ -93,11 +102,13 @@ class Future
             .Never = true
     -- TODO: isNever
 
-    -- TODO: cancel the loser
     @race: (A, B) ->
+        clean = cancel A, B
         Future (resolve, reject) ->
-            A\fork resolve, reject
-            B\fork resolve, reject
+            A\fork after clean, resolve, reject
+            B\fork after clean, resolve, reject
+
+            clean
 
     @alt: (A, B) ->
         Future (resolve, reject) ->
