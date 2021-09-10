@@ -100,7 +100,8 @@ class Future
     @never: ->
         with Future noop
             .Never = true
-    -- TODO: isNever
+
+    @isNever: (F) -> F.Never == true
 
     @race: (A, B) ->
         clean = cancel A, B
