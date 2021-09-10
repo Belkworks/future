@@ -1,5 +1,56 @@
+local insert
+insert = table.insert
+local wrap
+wrap = coroutine.wrap
 local noop
 noop = function() end
+local after
+after = function(fn, ...)
+  return unpack((function(...)
+    local _accum_0 = { }
+    local _len_0 = 1
+    local _list_0 = {
+      ...
+    }
+    for _index_0 = 1, #_list_0 do
+      local c = _list_0[_index_0]
+      _accum_0[_len_0] = (function(v)
+        return c(v, fn(v))
+      end)
+      _len_0 = _len_0 + 1
+    end
+    return _accum_0
+  end)(...))
+end
+local bound
+bound = function(fn, ...)
+  local Args = {
+    ...
+  }
+  return function()
+    return fn(unpack(Args))
+  end
+end
+local cancel
+cancel = function(...)
+  local Args = {
+    ...
+  }
+  return function()
+    for _index_0 = 1, #Args do
+      local F = Args[_index_0]
+      F:cancel()
+    end
+  end
+end
+local indexOf
+indexOf = function(t, x)
+  for k, v in pairs(t) do
+    if v == x then
+      return k
+    end
+  end
+end
 local Future
 do
   local _class_0
@@ -25,11 +76,17 @@ do
     resolver = function(self, State)
       return self:transitioner(self.__class.STATE.RESOLVED)
     end,
+    cancel = function(self)
+      return self:transition(self.__class.STATE.CANCEL)
+    end,
+    isDead = function(self)
+      return self.State > self.__class.STATE.RUNNING
+    end,
     hook = function(self, Callback)
-      if self.State > self.__class.STATE.RUNNING then
+      if self:isDead() then
         return Callback(self.State, self.Value)
       else
-        return table.insert(self.Listeners, Callback)
+        return insert(self.Listeners, Callback)
       end
     end,
     hookState = function(self, Target, Callback)
@@ -61,16 +118,6 @@ do
         end
       end)
       return Cancel
-    end,
-    value = function(self, Callback)
-      return self:fork(Callback, error)
-    end,
-    done = function(self, Callback)
-      local Resolved
-      Resolved = function(Value)
-        return Callback(nil, Value)
-      end
-      return self:fork(Resolved, Callback)
     end
   }
   _base_0.__index = _base_0
@@ -93,7 +140,7 @@ do
   _base_0.__class = _class_0
   local self = _class_0
   self.ASYNC = function(fn, ...)
-    return coroutine.wrap(fn)(...)
+    return wrap(fn)(...)
   end
   self.STATE = {
     IDLE = -2,
@@ -119,10 +166,41 @@ do
       return _with_0
     end
   end
-  self.race = function(A, B)
+  self.isNever = function(F)
+    return F.Never == true
+  end
+  self.value = function(self, F, Callback)
+    return F:fork(Callback, error)
+  end
+  self.done = function(self, F, Callback)
+    local Resolved
+    Resolved = function(Value)
+      return Callback(nil, Value)
+    end
+    return F:fork(Resolved, Callback)
+  end
+  self.node = function(self, Callback)
     return Future(function(resolve, reject)
-      A:fork(resolve, reject)
-      return B:fork(resolve, reject)
+      return Callback(function(err, value)
+        if err == nil then
+          return resolve(value)
+        else
+          return reject(err)
+        end
+      end)
+    end)
+  end
+  self.swap = function(self, F)
+    return Future(function(resolve, reject)
+      return F:fork(reject, resolve)
+    end)
+  end
+  self.race = function(A, B)
+    local clean = cancel(A, B)
+    return Future(function(resolve, reject)
+      A:fork(after(clean, resolve, reject))
+      B:fork(after(clean, resolve, reject))
+      return clean
     end)
   end
   self.alt = function(A, B)
@@ -139,10 +217,36 @@ do
       end), reject)
     end)
   end
+  self.lastly = function(A, B)
+    local clean = cancel(A, B)
+    return Future(function(resolve, reject)
+      local lastly
+      lastly = function(val)
+        return B:fork((bound(resolve, val)), reject)
+      end
+      local lastlyRej
+      lastlyRej = function(err)
+        return B:fork((bound(reject, err)), reject)
+      end
+      A:fork(lastly, lastlyRej)
+      return clean
+    end)
+  end
   self.log = function(header)
     return function(value)
       return print("[" .. tostring(header) .. "]:", value)
     end
+  end
+  self.watch = function(F, Callback)
+    if Callback == nil then
+      Callback = print
+    end
+    if F:isDead() then
+      return 
+    end
+    return F:hook(function(State, Value)
+      return Callback((indexOf(Future.STATE, k)))
+    end)
   end
   Future = _class_0
   return _class_0
