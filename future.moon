@@ -2,6 +2,7 @@
 -- SFZILabs 2021
 
 import insert from table
+import wrap from coroutine
 
 noop = ->
 
@@ -17,7 +18,7 @@ cancel = (...) ->
     -> F\cancel! for F in *Args
 
 class Future
-    @ASYNC: (fn, ...) -> coroutine.wrap(fn) ...
+    @ASYNC: (fn, ...) -> wrap(fn) ...
     @STATE:
         IDLE: -2
         RUNNING: -1
