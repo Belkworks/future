@@ -103,6 +103,17 @@ class Future
 
     @isNever: (F) -> F.Never == true
 
+    @done: (F, Callback) =>
+        Resolved = (Value) -> Callback nil, Value
+        F\fork Resolved, Callback
+
+    @node: (Callback) =>
+        Future (resolve, reject) ->
+            Callback (err, value) ->
+                if err == nil
+                    resolve value
+                else reject err
+
     @race: (A, B) ->
         clean = cancel A, B
         Future (resolve, reject) ->
