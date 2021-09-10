@@ -38,10 +38,15 @@ class Future
     resolver: (State) =>
         @transitioner @@STATE.RESOLVED
 
+    cancel: =>
+        @transition @@STATE.CANCEL
+
+    isDead: => @State > @@STATE.RUNNING
+
     hook: (Callback) =>
-        if @State > @@STATE.RUNNING
+        if @isDead!
             Callback @State, @Value
-        else table.insert @Listeners, Callback
+        else insert @Listeners, Callback
 
     hookState: (Target, Callback) =>
         @hook (State, Value) ->
