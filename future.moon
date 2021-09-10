@@ -82,19 +82,8 @@ class Future
 
         Cancel
 
-    -- TODO: make static
-    value: (Callback) =>
-        @fork Callback, error
-
-    -- TODO: make static
-    done: (Callback) =>
-        Resolved = (Value) -> Callback nil, Value
-        @fork Resolved, Callback
-
-    -- TODO: node
     -- TODO: swap
     -- TODO: lastly
-
     @resolve: (value) -> Future (resolve) -> resolve value
     @reject: (value) -> Future (reject) => reject value
     @never: ->
@@ -102,6 +91,9 @@ class Future
             .Never = true
 
     @isNever: (F) -> F.Never == true
+
+    @value: (F, Callback) =>
+        F\fork Callback, error
 
     @done: (F, Callback) =>
         Resolved = (Value) -> Callback nil, Value
@@ -113,6 +105,10 @@ class Future
                 if err == nil
                     resolve value
                 else reject err
+
+    @swap: (F) =>
+        Future (resolve, reject) ->
+            F\fork reject, resolve
 
     @race: (A, B) ->
         clean = cancel A, B
