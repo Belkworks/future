@@ -8,6 +8,10 @@ noop = ->
 after = (fn, ...) ->
     unpack [((v) -> c v, fn v) for c in *{...}]
 
+bound = (fn, ...) ->
+    Args = { ... }
+    -> fn unpack Args
+
 cancel = (...) ->
     Args = { ... }
     -> F\cancel! for F in *Args
@@ -82,8 +86,6 @@ class Future
 
         Cancel
 
-    -- TODO: swap
-    -- TODO: lastly
     @resolve: (value) -> Future (resolve) -> resolve value
     @reject: (value) -> Future (reject) => reject value
     @never: ->
@@ -126,5 +128,14 @@ class Future
     @both: (A, B) ->
         Future (resolve, reject) ->
             A\fork (-> B\fork resolve, reject), reject
+
+    @lastly: (A, B) ->
+        clean = cancel A, B
+        Future (resolve, reject) ->
+            lastly = (val) -> B\fork (bound resolve, val), reject
+            lastlyRej = (err) -> B\fork (bound reject, err), reject
+
+            A\fork lastly, lastlyRej
+            clean
 
     @log: (header) -> (value) -> print "[#{header}]:", value
