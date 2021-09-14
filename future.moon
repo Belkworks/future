@@ -102,12 +102,24 @@ class Future
         Resolved = (Value) -> Callback nil, Value
         F\fork Resolved, Callback
 
-    @node: (Callback) ->
+    @node: (Fn) ->
         Future (resolve, reject) ->
-            Callback (err, value) ->
+            Fn (err, value) ->
                 if err == nil
                     resolve value
                 else reject err
+
+    @encase: (Fn) ->
+        (...) ->
+            Args = {...}
+            Future (resolve, reject) ->
+                S, E = pcall Fn, unpack Args
+                if S
+                    resolve E
+                else reject E
+
+    @attempt: (Fn) ->
+        Future.encase(Fn)!
 
     @swap: (F) ->
         Future (resolve, reject) ->

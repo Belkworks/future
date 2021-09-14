@@ -182,9 +182,9 @@ do
     end
     return F:fork(Resolved, Callback)
   end
-  self.node = function(Callback)
+  self.node = function(Fn)
     return Future(function(resolve, reject)
-      return Callback(function(err, value)
+      return Fn(function(err, value)
         if err == nil then
           return resolve(value)
         else
@@ -192,6 +192,24 @@ do
         end
       end)
     end)
+  end
+  self.encase = function(Fn)
+    return function(...)
+      local Args = {
+        ...
+      }
+      return Future(function(resolve, reject)
+        local S, E = pcall(Fn, unpack(Args))
+        if S then
+          return resolve(E)
+        else
+          return reject(E)
+        end
+      end)
+    end
+  end
+  self.attempt = function(Fn)
+    return Future.encase(Fn)()
   end
   self.swap = function(F)
     return Future(function(resolve, reject)
