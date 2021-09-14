@@ -92,21 +92,21 @@ class Future
 
     @isNever: (F) -> F.Never == true
 
-    @value: (F, Callback) =>
+    @value: (F, Callback) ->
         F\fork Callback, error
 
-    @done: (F, Callback) =>
+    @done: (F, Callback) ->
         Resolved = (Value) -> Callback nil, Value
         F\fork Resolved, Callback
 
-    @node: (Callback) =>
+    @node: (Callback) ->
         Future (resolve, reject) ->
             Callback (err, value) ->
                 if err == nil
                     resolve value
                 else reject err
 
-    @swap: (F) =>
+    @swap: (F) ->
         Future (resolve, reject) ->
             F\fork reject, resolve
 

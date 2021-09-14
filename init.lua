@@ -169,17 +169,17 @@ do
   self.isNever = function(F)
     return F.Never == true
   end
-  self.value = function(self, F, Callback)
+  self.value = function(F, Callback)
     return F:fork(Callback, error)
   end
-  self.done = function(self, F, Callback)
+  self.done = function(F, Callback)
     local Resolved
     Resolved = function(Value)
       return Callback(nil, Value)
     end
     return F:fork(Resolved, Callback)
   end
-  self.node = function(self, Callback)
+  self.node = function(Callback)
     return Future(function(resolve, reject)
       return Callback(function(err, value)
         if err == nil then
@@ -190,7 +190,7 @@ do
       end)
     end)
   end
-  self.swap = function(self, F)
+  self.swap = function(F)
     return Future(function(resolve, reject)
       return F:fork(reject, resolve)
     end)
