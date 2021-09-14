@@ -92,6 +92,9 @@ class Future
 
     @isNever: (F) -> F.Never == true
 
+    @fork: (F, ...) ->
+        F\fork ...
+
     @value: (F, Callback) ->
         F\fork Callback, error
 

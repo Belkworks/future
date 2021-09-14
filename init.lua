@@ -169,6 +169,9 @@ do
   self.isNever = function(F)
     return F.Never == true
   end
+  self.fork = function(F, ...)
+    return F:fork(...)
+  end
   self.value = function(F, Callback)
     return F:fork(Callback, error)
   end
