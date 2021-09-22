@@ -15,7 +15,7 @@ after = function(fn, ...)
     for _index_0 = 1, #_list_0 do
       local c = _list_0[_index_0]
       _accum_0[_len_0] = (function(v)
-        return c(v, fn(v))
+        return fn(v, c(v))
       end)
       _len_0 = _len_0 + 1
     end

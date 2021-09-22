@@ -7,7 +7,7 @@ import wrap from coroutine
 noop = ->
 
 after = (fn, ...) ->
-    unpack [((v) -> c v, fn v) for c in *{...}]
+    unpack [((v) -> fn v, c v) for c in *{...}]
 
 bound = (fn, ...) ->
     Args = { ... }
