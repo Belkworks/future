@@ -55,6 +55,9 @@ local Future
 do
   local _class_0
   local _base_0 = {
+    __tostring = function(self)
+      return "Future(" .. tostring(self.Callback) .. ")"
+    end,
     transition = function(self, State, Value)
       if not (self.State == self.__class.STATE.RUNNING) then
         return 

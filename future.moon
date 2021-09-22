@@ -29,6 +29,10 @@ class Future
         REJECTED: 1
         CANCEL: 2
 
+    __tostring: =>
+        -- TODO: include state (if settled?)
+        "Future(#{@Callback})"
+
     new: (@Callback) =>
         @State = @@STATE.IDLE
         @Listeners = {}
