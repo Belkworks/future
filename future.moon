@@ -39,6 +39,7 @@ class Future
 
     transition: (State, Value) =>
         return unless @State == @@STATE.RUNNING
+        return unless State > @@STATE.RUNNING
         @State = State
         @Value = Value
 

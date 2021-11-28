@@ -62,6 +62,9 @@ do
       if not (self.State == self.__class.STATE.RUNNING) then
         return 
       end
+      if not (State > self.__class.STATE.RUNNING) then
+        return 
+      end
       self.State = State
       self.Value = Value
       local _list_0 = self.Listeners
