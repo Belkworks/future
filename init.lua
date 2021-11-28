@@ -104,8 +104,12 @@ do
       end)
     end,
     fork = function(self, Resolved, Rejected)
-      self:hookState(self.__class.STATE.RESOLVED, Resolved or function() end)
-      self:hookState(self.__class.STATE.REJECTED, Rejected or function() end)
+      if Resolved then
+        self:hookState(self.__class.STATE.RESOLVED, Resolved)
+      end
+      if Rejected then
+        self:hookState(self.__class.STATE.REJECTED, Rejected)
+      end
       if not (self.State == self.__class.STATE.IDLE) then
         return 
       end

@@ -70,8 +70,8 @@ class Future
             Callback Value
 
     fork: (Resolved, Rejected) =>
-        @hookState @@STATE.RESOLVED, Resolved or ->
-        @hookState @@STATE.REJECTED, Rejected or ->
+        @hookState @@STATE.RESOLVED, Resolved if Resolved
+        @hookState @@STATE.REJECTED, Rejected if Rejected
 
         return unless @State == @@STATE.IDLE
         @State = @@STATE.RUNNING
